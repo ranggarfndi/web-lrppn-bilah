@@ -183,6 +183,31 @@
                                 </p>
                             </div>
                             <div class="p-6 space-y-4">
+                                {{-- === TAMBAHKAN BAGIAN INI === --}}
+                                <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
+                                    <h4 class="text-sm font-bold text-indigo-800 mb-2 uppercase tracking-wider">Data Penggunaan Awal</h4>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p class="text-xs text-indigo-500 uppercase">Jenis NAPZA</p>
+                                            <p class="font-semibold text-gray-900">
+                                                {{ $user->hasilKlasifikasi->data_input_json['jenis_napza'] ?? '-' }}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-indigo-500 uppercase">Lama Penggunaan</p>
+                                            <p class="font-semibold text-gray-900">
+                                                {{ $user->hasilKlasifikasi->data_input_json['lama_penggunaan'] ?? '-' }}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-indigo-500 uppercase">Jenis Kelamin</p>
+                                            <p class="font-semibold text-gray-900">
+                                                {{ $user->hasilKlasifikasi->data_input_json['jenis_kelamin'] ?? '-' }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {{-- === AKHIR TAMBAHAN === --}}
                                 <div>
                                     <span class="text-sm font-medium text-gray-500">Rekomendasi Program</span>
                                     <p class="text-2xl font-bold text-indigo-600">
