@@ -42,6 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/pasien', [PasienController::class, 'store'])->name('admin.pasien.store');
     // Menampilkan profil detail satu pasien (ini halaman riwayat)
     Route::get('/admin/pasien/{user}', [PasienController::class, 'show'])->name('admin.pasien.show');
+    // Chart Data
+    Route::get('/admin/pasien/{user}/chart-data', [PasienController::class, 'getChartData'])->name('admin.pasien.chart');
 
     // --- Klasifikasi (Sudah kita gabung ke PasienController) ---
     // Route::get('/klasifikasi/baru', [KlasifikasiController::class, 'create'])->name('klasifikasi.create');
