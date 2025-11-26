@@ -104,6 +104,10 @@
                                                 Nama Pasien</th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                                Info NAPZA (Awal)
+                                            </th>
+                                            <th scope="col"
+                                                class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                                 Info Wali</th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -131,10 +135,29 @@
                                                         </div>
                                                     </a>
                                                 </td>
+                                                {{-- TAMBAHKAN KOLOM INI --}}
+                                                <td class="px-6 py-4">
+                                                    @if ($pasien->hasilKlasifikasi)
+                                                        <div class="text-sm font-bold text-gray-900">
+                                                            {{-- Mengambil Jenis NAPZA dari JSON --}}
+                                                            {{ $pasien->hasilKlasifikasi->data_input_json['jenis_napza'] ?? '-' }}
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 mt-1">
+                                                            {{-- Mengambil Lama Penggunaan dari JSON --}}
+                                                            Lama:
+                                                            {{ $pasien->hasilKlasifikasi->data_input_json['lama_penggunaan'] ?? '-' }}
+                                                        </div>
+                                                    @else
+                                                        <span class="text-xs text-gray-400 italic">Belum
+                                                            diklasifikasi</span>
+                                                    @endif
+                                                </td>
+                                                {{-- SAMPAI SINI --}}
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     @if ($pasien->profil)
                                                         <div class="text-sm text-gray-900">
-                                                            {{ $pasien->profil->nama_wali ?? 'Wali belum diisi' }}</div>
+                                                            {{ $pasien->profil->nama_wali ?? 'Wali belum diisi' }}
+                                                        </div>
                                                         <div class="text-sm text-gray-500">
                                                             {{ $pasien->profil->no_telepon_wali ?? 'Kontak belum diisi' }}
                                                         </div>
@@ -177,9 +200,9 @@
                                                                 menemukan pasien yang cocok dengan kata kunci
                                                                 "{{ $search }}".</p>
                                                         @else
-                                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none"
-                                                                viewBox="0 0 24 24" stroke="currentColor"
-                                                                stroke-width="2">
+                                                            <svg class="mx-auto h-12 w-12 text-gray-400"
+                                                                fill="none" viewBox="0 0 24 24"
+                                                                stroke="currentColor" stroke-width="2">
                                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                                             </svg>

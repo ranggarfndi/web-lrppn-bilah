@@ -21,6 +21,10 @@ class HasilKlasifikasi extends Model
         'catatan_sistem',
     ];
 
+    protected $casts = [
+        'data_input_json' => 'array',
+    ];
+
     /**
      * Hasil ini milik satu User.
      */
