@@ -13,9 +13,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Hapus data lama (jika ada) - ini tidak akan berjalan jika kita pakai migrate:fresh
-        // User::query()->delete(); // Hati-hati
-
         // 1. Buat 1 Akun Admin
         // Kita buat secara manual agar kita tahu pasti email & password-nya
         User::factory()->create([
@@ -25,17 +22,20 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
+        // 2. Jalankan Import CSV (Data Pasien Asli 2021-2025)
+        $this->call(ImportDataCsvSeeder::class);
+
         // 2. Buat 50 Akun Pasien (Dummy)
         // Factory kita akan otomatis membuat semua data riwayat
         // (Profil, Klasifikasi, 5 SOAP, 5 Likert) untuk setiap pasien.
-        User::factory()->count(50)->create();
+        // User::factory()->count(50)->create();
 
         // 3. Buat 1 Akun Pasien (Dummy) yang kita tahu login-nya
-        User::factory()->create([
-            'name' => 'Pasien Tes',
-            'email' => 'pasien@gmail.com',
-            'password' => Hash::make('password'), // Password: "password"
-            'role' => 'pasien',
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Pasien Tes',
+        //     'email' => 'pasien@gmail.com',
+        //     'password' => Hash::make('password'), // Password: "password"
+        //     'role' => 'pasien',
+        // ]);
     }
 }
