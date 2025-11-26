@@ -186,4 +186,27 @@ class PasienController extends Controller
 
         return view('admin.pasien.show', compact('user'));
     }
+
+    public function getChartData(User $user)
+    {
+        // 1. Ambil semua hasil tes likert pasien ini, urutkan dari LAMA ke BARU
+        $hasilTes = $user->tesLikertHasil()
+                        ->orderBy('created_at', 'asc')
+                        ->get();
+
+        // 2. Format data agar bisa dibaca oleh Chart.js
+        $labels = []; // Untuk sumbu X (Tanggal)
+        $dataSkor = []; // Untuk sumbu Y (Skor)
+
+        foreach ($hasilTes as $hasil) {
+            $labels[] = $hasil->created_at->format('d M Y'); 
+            $dataSkor[] = $hasil->total_skor;
+        }
+
+        // 3. Kembalikan data sebagai JSON
+        return response()->json([
+            'labels' => $labels,
+            'data' => $dataSkor,
+        ]);
+    }
 }
