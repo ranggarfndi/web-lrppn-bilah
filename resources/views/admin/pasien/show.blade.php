@@ -1,7 +1,4 @@
-{{-- File: resources/views/admin/pasien/show.blade.php (DENGAN CHART) --}}
-
 <x-app-layout>
-    {{-- <x-slot name="header"> SUDAH DIHAPUS --}}
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -122,21 +119,21 @@
                         <div class="p-6 flex flex-col space-y-4">
                             <a href="{{ route('admin.soap.create', $user->id) }}" 
                                class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 ease-in-out hover:shadow-lg hover:-translate-y-px">
-                                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0110 6H4.75A.75.75 0 014 5.25H3.5zM3.75 9A.75.75 0 014.5 9H10a.75.75 0 010 1.5H4.5A.75.75 0 013.75 9zM3.75 12.25A.75.75 0 014.5 12.25H10a.75.75 0 010 1.5H4.5a.75.75 0 01-.75-.75z" /></svg>
+                                {{-- <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0110 6H4.75A.75.75 0 014 5.25H3.5zM3.75 9A.75.75 0 014.5 9H10a.75.75 0 010 1.5H4.5A.75.75 0 013.75 9zM3.75 12.25A.75.75 0 014.5 12.25H10a.75.75 0 010 1.5H4.5a.75.75 0 01-.75-.75z" /></svg> --}}
                                 + Tambah Catatan SOAP
                             </a>
                             <a href="{{ route('admin.likert.create', $user->id) }}" 
                                class="inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 ease-in-out hover:shadow-lg hover:-translate-y-px">
-                                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.12-.22-.38-.34-.64-.34s-.52.12-.64.34L8.32 5.6H5.25a.75.75 0 000 1.5h3.07l-1.6 2.56a.75.75 0 011.28.8l1.6-2.56v7.31a.75.75 0 001.5 0V7.7l1.6 2.56a.75.75 0 001.28-.8L11.68 7.1h3.07a.75.75 0 000-1.5h-3.07l-1.88-2.43z" clip-rule="evenodd" /></svg>
+                                {{-- <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.12-.22-.38-.34-.64-.34s-.52.12-.64.34L8.32 5.6H5.25a.75.75 0 000 1.5h3.07l-1.6 2.56a.75.75 0 011.28.8l1.6-2.56v7.31a.75.75 0 001.5 0V7.7l1.6 2.56a.75.75 0 001.28-.8L11.68 7.1h3.07a.75.75 0 000-1.5h-3.07l-1.88-2.43z" clip-rule="evenodd" /></svg> --}}
                                 + Isi Tes Likert
                             </a>
                             <div class="border-t pt-4">
                                 <a href="{{ route('admin.status.create', $user->id) }}" 
                                    class="inline-flex items-center justify-center px-4 py-2 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200 ease-in-out hover:shadow-lg hover:-translate-y-px w-full">
-                                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    {{-- <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                       <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201-2.452 5.5 5.5 0 013.435-6.42 1.5 1.5 0 011.002 1.758l-1.076 4.304a.75.75 0 001.442.36l1.076-4.303a1.5 1.5 0 012.32.682 5.5 5.5 0 01-1.92 6.13z" clip-rule="evenodd" />
                                       <path fill-rule="evenodd" d="M10 18a.75.75 0 01-.75-.75V13.688c0-.463.265-.89.69-1.125a1.5 1.5 0 011.12 0c.425.235.69.662.69 1.125v3.562a.75.75 0 01-.75.75z" clip-rule="evenodd" />
-                                    </svg>
+                                    </svg> --}}
                                     Ubah Status/Program
                                 </a>
                             </div>
