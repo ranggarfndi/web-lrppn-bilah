@@ -9,6 +9,7 @@ use App\Http\Controllers\CatatanSoapController;
 use App\Http\Controllers\TesLikertController;
 use App\Http\Controllers\RiwayatPasienController;
 use App\Http\Controllers\RiwayatStatusController;
+use App\Models\HasilKlasifikasi;
 
 // Halaman Awal (Publik)
 Route::get('/', function () {
@@ -81,6 +82,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/pasien/riwayat/chart-data', [RiwayatPasienController::class, 'getChartData'])->name('pasien.riwayat.chart');
 });
 
+Route::get('/cek-data', function () {
+    // Ambil data terakhir
+    $data = HasilKlasifikasi::latest()->first();
+    
+    if(!$data) return "Belum ada data klasifikasi.";
+
+    return [
+        'Tipe Data Asli' => gettype($data->data_input_json), // Harus 'array'
+        'Isi Data' => $data->data_input_json, // Harus tampil JSON rapi, bukan string berantakan
+        'Isi Raw' => $data->getRawOriginal('data_input_json') // Melihat apa yang tersimpan di DB mentah-mentah
+    ];
+});
 
 // Ini harus ada di paling bawah file
 require __DIR__ . '/auth.php';

@@ -18,6 +18,7 @@ class ProfilPasien extends Model
         'tgl_lahir',
         'no_telepon_wali',
         'nama_wali',
+        'urica_score',
     ];
 
     /**

@@ -4,16 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HasilKlasifikasi extends Model
 {
     use HasFactory;
-    protected $table = 'hasil_klasifikasi';
 
-    // Tentukan kolom yang boleh diisi
+    // === TAMBAHKAN BARIS INI ===
+    // Sesuaikan dengan nama tabel di database Anda (biasanya tanpa 's')
+    protected $table = 'hasil_klasifikasi'; 
+    // ============================
+
     protected $fillable = [
-        // 'user_id',
+        'user_id',
         'data_input_json',
         'prediksi_knn',
         'prediksi_nb',
@@ -25,10 +27,7 @@ class HasilKlasifikasi extends Model
         'data_input_json' => 'array',
     ];
 
-    /**
-     * Hasil ini milik satu User.
-     */
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }

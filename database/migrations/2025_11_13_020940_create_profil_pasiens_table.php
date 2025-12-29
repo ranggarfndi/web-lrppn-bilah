@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date('tgl_lahir')->nullable();
             $table->string('no_telepon_wali')->nullable();
             $table->string('nama_wali')->nullable();
-
+            $table->float('urica_score')->nullable()->default(0);
             $table->timestamps();
         });
     }
