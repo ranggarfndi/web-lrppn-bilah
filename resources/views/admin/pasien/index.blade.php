@@ -1,4 +1,4 @@
-{{-- File: resources/views/admin/pasien/index.blade.php (Filter Sortir Diperbaiki) --}}
+{{-- File: resources/views/admin/pasien/index.blade.php --}}
 
 <x-app-layout>
     {{-- Konten Utama Halaman --}}
@@ -65,7 +65,7 @@
                                             </div>
                                         </div>
 
-                                        {{-- 2. Dropdown Sortir (BARU) --}}
+                                        {{-- 2. Dropdown Sortir --}}
                                         <div class="shrink-0">
                                             <label for="sort"
                                                 class="block text-sm font-medium text-gray-700">Urutkan
@@ -94,6 +94,7 @@
                                     </div>
                                 </form>
                             </div>
+                            
                             {{-- Pembungkus Tabel --}}
                             <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-b-lg">
                                 <table class="min-w-full divide-y divide-gray-200">
@@ -104,7 +105,7 @@
                                                 Nama Pasien</th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                                Info NAPZA (Awal)
+                                                Info Medis & Assessment
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -120,6 +121,7 @@
                                     <tbody class="bg-white divide-y divide-gray-200">
                                         @forelse ($pasienList as $pasien)
                                             <tr class="hover:bg-slate-50 transition-colors duration-150 group">
+                                                {{-- 1. NAMA --}}
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <a href="{{ route('admin.pasien.show', $pasien->id) }}"
                                                         class="flex items-center group-hover:underline">
@@ -135,24 +137,39 @@
                                                         </div>
                                                     </a>
                                                 </td>
-                                                {{-- TAMBAHKAN KOLOM INI --}}
+
+                                                {{-- 2. INFO MEDIS (NAPZA + URICA) --}}
                                                 <td class="px-6 py-4">
                                                     @if ($pasien->hasilKlasifikasi)
+                                                        {{-- NAPZA --}}
                                                         <div class="text-sm font-bold text-gray-900">
-                                                            {{-- Mengambil Jenis NAPZA dari JSON --}}
                                                             {{ $pasien->hasilKlasifikasi->data_input_json['jenis_napza'] ?? '-' }}
                                                         </div>
+                                                        {{-- LAMA --}}
                                                         <div class="text-xs text-gray-500 mt-1">
-                                                            {{-- Mengambil Lama Penggunaan dari JSON --}}
                                                             Lama:
                                                             {{ $pasien->hasilKlasifikasi->data_input_json['lama_penggunaan'] ?? '-' }}
                                                         </div>
+                                                        {{-- URICA SCORE --}}
+                                                        <div class="mt-2">
+                                                            @php
+                                                                // Ambil URICA dari JSON Klasifikasi atau dari Profil (Fallback)
+                                                                $urica = $pasien->hasilKlasifikasi->data_input_json['urica_score'] 
+                                                                         ?? $pasien->profil->urica_score 
+                                                                         ?? 0;
+                                                            @endphp
+                                                            @if($urica > 0)
+                                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                                    URICA: {{ number_format($urica, 2) }}
+                                                                </span>
+                                                            @endif
+                                                        </div>
                                                     @else
-                                                        <span class="text-xs text-gray-400 italic">Belum
-                                                            diklasifikasi</span>
+                                                        <span class="text-xs text-gray-400 italic">Belum diklasifikasi</span>
                                                     @endif
                                                 </td>
-                                                {{-- SAMPAI SINI --}}
+
+                                                {{-- 3. INFO WALI --}}
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     @if ($pasien->profil)
                                                         <div class="text-sm text-gray-900">
@@ -166,9 +183,13 @@
                                                         </div>
                                                     @endif
                                                 </td>
+
+                                                {{-- 4. TANGGAL --}}
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {{ $pasien->created_at->format('d M Y') }}
                                                 </td>
+
+                                                {{-- 5. AKSI --}}
                                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <a href="{{ route('admin.pasien.show', $pasien->id) }}"
                                                         class="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold tracking-wider hover:bg-indigo-200 transition-colors duration-150 transform hover:scale-105">
@@ -183,8 +204,9 @@
                                                 </td>
                                             </tr>
                                         @empty
+                                            {{-- EMPTY STATE --}}
                                             <tr>
-                                                <td colspan="4">
+                                                <td colspan="5">
                                                     <div class="text-center p-12">
                                                         @if ($search ?? false)
                                                             <svg class="mx-auto h-12 w-12 text-gray-400"
@@ -236,23 +258,15 @@
         </div>
     </div>
 
-    {{-- SCRIPT BARU UNTUK AUTO-SUBMIT FORM (DIPERBAIKI) --}}
     @push('scripts')
         <script>
-            // === PERBAIKAN: Bungkus dengan 'DOMContentLoaded' ===
-            // Menunggu halaman HTML selesai dimuat sebelum menjalankan JavaScript
             document.addEventListener('DOMContentLoaded', function() {
-
                 const sortDropdown = document.getElementById('sort');
-
                 if (sortDropdown) {
-                    // Tambahkan event listener 'change'
                     sortDropdown.addEventListener('change', function() {
-                        // Submit form 'filterForm' secara otomatis saat nilainya berubah
                         document.getElementById('filterForm').submit();
                     });
                 }
-
             });
         </script>
     @endpush

@@ -10,22 +10,18 @@ use Carbon\Carbon;
 
 class ImportDataCsvSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Ambil semua file .csv di folder database/csv
         $files = glob(database_path('csv/*.csv'));
 
-        foreach ($files as $file) {
-            $this->command->info("------------------------------------------------");
-            $this->command->info("Memproses file: " . basename($file));
-            
-            // Deteksi Delimiter (Koma atau Titik Koma)
-            $delimiter = $this->detectDelimiter($file);
-            $this->command->warn("Delimiter terdeteksi: '{$delimiter}'");
+        if (empty($files)) {
+            $this->command->warn("Tidak ada file CSV ditemukan.");
+            return;
+        }
 
+        foreach ($files as $file) {
+            $this->command->info("Memproses file: " . basename($file));
+            $delimiter = $this->detectDelimiter($file);
             $this->importFile($file, $delimiter);
         }
     }
@@ -33,14 +29,9 @@ class ImportDataCsvSeeder extends Seeder
     private function detectDelimiter($filePath)
     {
         $handle = fopen($filePath, "r");
-        $firstLine = fgets($handle); // Baca baris pertama
+        $firstLine = fgets($handle); 
         fclose($handle);
-
-        // Jika ada titik koma, kita asumsikan itu pemisahnya
-        if (strpos($firstLine, ';') !== false) {
-            return ';';
-        }
-        return ',';
+        return (strpos($firstLine, ';') !== false) ? ';' : ',';
     }
 
     private function importFile($filePath, $delimiter)
@@ -48,37 +39,43 @@ class ImportDataCsvSeeder extends Seeder
         $handle = fopen($filePath, "r");
         if ($handle === false) return;
 
-        // Lewati Header
-        fgetcsv($handle, 2000, $delimiter);
+        fgetcsv($handle, 0, $delimiter); // Skip Header
 
         $count = 0;
         $skipped = 0;
 
-        while (($row = fgetcsv($handle, 2000, $delimiter)) !== false) {
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             
-            // Debugging: Jika kolom kurang dari 8, beri tahu user
-            if (count($row) < 8) {
+            // --- STRUKTUR KOLOM CSV (Update Single URICA) ---
+            // 0: No
+            // 1: Nama
+            // 2: Tanggal Masuk
+            // 3: Gender
+            // 4: Alamat
+            // 5: NAPZA
+            // 6: Lama Penggunaan
+            // 7: Riwayat Penyakit
+            // 8: Tingkat Keparahan (Diagnosa Lama)
+            // 9: SKOR URICA (Single Value) -> Kolom Baru
+
+            if (count($row) < 9) {
                 $skipped++;
                 continue;
             }
 
-            // Bersihkan data dari spasi berlebih
             $nama = trim($row[1]);
-            
-            // Skip jika nama kosong
-            if (empty($nama)) {
-                $skipped++;
-                continue;
-            }
+            if (empty($nama)) { $skipped++; continue; }
 
-            // Buat email dummy unik
-            $email = strtolower(str_replace([' ', '.', ','], '', $nama)) . '_' . uniqid() . '@lrppn.com';
-            
-            // Parsing Tanggal
+            $cleanName = preg_replace('/[^a-z0-9]/', '', strtolower($nama));
+            $email = $cleanName . '.' . uniqid() . '@lrppn.com';
             $tanggalMasuk = $this->parseDate($row[2]);
 
+            // Ambil Skor URICA Tunggal dari kolom ke-9
+            // Jika kosong, default 0
+            $uricaScore = isset($row[9]) && is_numeric($row[9]) ? (float)$row[9] : 0;
+
             try {
-                DB::transaction(function () use ($row, $nama, $email, $tanggalMasuk) {
+                DB::transaction(function () use ($row, $nama, $email, $tanggalMasuk, $uricaScore) {
                     
                     // 1. Buat User
                     $user = User::create([
@@ -90,19 +87,18 @@ class ImportDataCsvSeeder extends Seeder
                         'updated_at' => $tanggalMasuk,
                     ]);
 
-                    // 2. Buat Profil
+                    // 2. Buat Profil (Simpan Single Score)
                     $user->profil()->create([
                         'alamat' => $row[4] ?? '-',
                         'nama_wali' => 'Data Historis',
                         'no_telepon_wali' => '-',
+                        'urica_score' => $uricaScore, // Masukkan ke kolom urica_score
                         'created_at' => $tanggalMasuk,
                         'updated_at' => $tanggalMasuk,
                     ]);
 
                     // 3. Buat Hasil Klasifikasi
-                    $keparahan = trim($row[7]);
-                    
-                    // Normalisasi keparahan (Huruf besar awal)
+                    $keparahan = trim($row[8]); 
                     $keparahan = ucwords(strtolower($keparahan));
 
                     $program = match ($keparahan) {
@@ -112,21 +108,30 @@ class ImportDataCsvSeeder extends Seeder
                         default => 'Belum Ditentukan',
                     };
 
+                    $riwayatPenyakit = trim($row[7]);
+
+                    // Simpan JSON Input dengan key 'urica_score'
+                    $inputJson = [ 
+                        'jenis_napza' => $row[5],
+                        'lama_penggunaan' => $row[6],
+                        'jenis_kelamin' => $row[3], 
+                        'riwayat_penyakit' => $riwayatPenyakit,
+                        'urica_score' => $uricaScore, 
+                    ];
+
                     $user->hasilKlasifikasi()->create([
-                        'data_input_json' => json_encode([
-                            'jenis_napza' => $row[5],
-                            'lama_penggunaan' => $row[6],
-                            'jenis_kelamin' => $row[3],
-                        ]),
+                        // [PERBAIKAN] Hapus json_encode(), kirim array $inputJson langsung
+                        'data_input_json' => $inputJson, 
+                        
                         'prediksi_knn' => $keparahan,
                         'prediksi_nb' => $keparahan,
                         'rekomendasi_program' => $program,
-                        'catatan_sistem' => 'Import data historis (CSV).',
+                        'catatan_sistem' => 'Import CSV (Single URICA Score).',
                         'created_at' => $tanggalMasuk,
                         'updated_at' => $tanggalMasuk,
                     ]);
 
-                    // 4. Buat Riwayat Status
+                    // 4. Riwayat Status
                     $user->riwayatStatus()->create([
                         'admin_id' => 1,
                         'status_baru' => $keparahan,
@@ -139,21 +144,19 @@ class ImportDataCsvSeeder extends Seeder
                 });
                 $count++;
             } catch (\Exception $e) {
-                $this->command->error("Gagal: " . $nama . " - " . $e->getMessage());
+                $this->command->error("Gagal baris $count ($nama): " . $e->getMessage());
             }
         }
 
         fclose($handle);
-        $this->command->info("Sukses import: $count data. (Skipped: $skipped)");
+        $this->command->info("Sukses import: $count data.");
     }
 
     private function parseDate($dateString)
     {
         try {
-            // Coba format Excel standard (Y-m-d)
             return Carbon::parse($dateString);
         } catch (\Exception $e) {
-            // Jika gagal, coba format Indonesia manual (dd Mei yyyy atau dd-mm-yyyy)
             return now(); 
         }
     }
