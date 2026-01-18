@@ -124,7 +124,6 @@
                         </h3>
                         <p class="mt-1 max-w-2xl text-sm text-indigo-700">
                             Jawablah 28 pertanyaan berikut dengan skala 1 (Sangat Tidak Setuju) s.d 5 (Sangat Setuju).
-                            <span class="font-bold">Jawaban ini mempengaruhi hasil klasifikasi.</span>
                         </p>
                     </div>
                     <div class="p-0">
