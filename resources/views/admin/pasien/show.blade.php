@@ -182,7 +182,7 @@
                             <div class="p-6 space-y-4">
                                 {{-- Data Input Awal --}}
                                 <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
-                                    <h4 class="text-sm font-bold text-indigo-800 mb-3 uppercase tracking-wider border-b border-indigo-200 pb-2">Data Input AI</h4>
+                                    <h4 class="text-sm font-bold text-indigo-800 mb-3 uppercase tracking-wider border-b border-indigo-200 pb-2">Data Input Awal</h4>
                                     
                                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         <div>
