@@ -235,10 +235,10 @@
                                     </p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                                    <div>
+                                    {{-- <div>
                                         <span class="text-sm font-medium text-gray-500">Prediksi KNN</span>
                                         <p class="text-lg font-semibold text-gray-800">{{ $user->hasilKlasifikasi->prediksi_knn }}</p>
-                                    </div>
+                                    </div> --}}
                                     <div>
                                         <span class="text-sm font-medium text-gray-500">Prediksi Naive Bayes</span>
                                         <p class="text-lg font-semibold text-gray-800">{{ $user->hasilKlasifikasi->prediksi_nb }}</p>
