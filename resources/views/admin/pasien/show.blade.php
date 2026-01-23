@@ -180,6 +180,7 @@
                                 </p>
                             </div>
                             <div class="p-6 space-y-4">
+                                
                                 {{-- Data Input Awal --}}
                                 <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-bold text-indigo-800 mb-3 uppercase tracking-wider border-b border-indigo-200 pb-2">Data Input Awal</h4>
@@ -203,14 +204,14 @@
                                                 {{ $user->hasilKlasifikasi->data_input_json['jenis_kelamin'] ?? '-' }}
                                             </p>
                                         </div>
-                                        {{-- [BARU] Riwayat Penyakit --}}
+                                        {{-- Riwayat Penyakit --}}
                                         <div>
                                             <p class="text-xs text-indigo-500 uppercase">Riwayat Penyakit</p>
                                             <p class="font-semibold text-gray-900">
                                                 {{ $user->hasilKlasifikasi->data_input_json['riwayat_penyakit'] ?? '-' }}
                                             </p>
                                         </div>
-                                        {{-- [BARU] Skor URICA --}}
+                                        {{-- Skor URICA --}}
                                         <div>
                                             <p class="text-xs text-indigo-500 uppercase">Skor URICA</p>
                                             <div class="flex items-center">
@@ -223,25 +224,62 @@
                                     </div>
                                 </div>
 
+                                {{-- Rekomendasi Program --}}
                                 <div>
                                     <span class="text-sm font-medium text-gray-500">Rekomendasi Program</span>
                                     <p class="text-3xl font-bold text-indigo-600">
                                         {{ $user->hasilKlasifikasi->rekomendasi_program }}
                                     </p>
                                 </div>
+                                
+                                {{-- Catatan Sistem --}}
                                 <div class="bg-slate-50 rounded-md p-4">
                                     <p class="text-sm text-gray-700">
                                         <strong>Catatan Sistem:</strong> {{ $user->hasilKlasifikasi->catatan_sistem }}
                                     </p>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                                    {{-- <div>
-                                        <span class="text-sm font-medium text-gray-500">Prediksi KNN</span>
-                                        <p class="text-lg font-semibold text-gray-800">{{ $user->hasilKlasifikasi->prediksi_knn }}</p>
-                                    </div> --}}
-                                    <div>
-                                        <span class="text-sm font-medium text-gray-500">Prediksi Naive Bayes</span>
-                                        <p class="text-lg font-semibold text-gray-800">{{ $user->hasilKlasifikasi->prediksi_nb }}</p>
+
+                                {{-- === [BAGIAN LOGIKA AI (TANPA TOMBOL)] === --}}
+                                @php
+                                    // Ambil data mentah
+                                    $rawPrediksi = $user->hasilKlasifikasi->data_input_json['prediksi_nb']['tingkat_keparahan'] ?? $user->hasilKlasifikasi->prediksi_nb;
+                                    
+                                    // Cek apakah data tidak valid (Angka import CSV, Kosong, atau Strip)
+                                    $isDataAneh = is_numeric($rawPrediksi) || empty($rawPrediksi) || $rawPrediksi == '-';
+
+                                    if ($isDataAneh) {
+                                        $textTampil = "Belum Ditentukan";
+                                        $kelasWarna = "text-gray-400 italic font-medium"; 
+                                        $keterangan = "(Data Import CSV)";
+                                    } else {
+                                        $textTampil = $rawPrediksi;
+                                        $kelasWarna = "text-purple-900 font-extrabold"; 
+                                        $keterangan = "";
+                                    }
+                                @endphp
+
+                                <div class="mt-4 pt-4 border-t border-gray-100">
+                                    <div class="p-4 bg-purple-50 rounded border border-purple-100 relative transition-all hover:shadow-sm">
+                                        <p class="text-xs text-purple-600 font-bold uppercase tracking-wider mb-1">
+                                            Hasil Prediksi (Metode Naive Bayes)
+                                        </p>
+                                        
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-2xl {{ $kelasWarna }}">
+                                                {{ $textTampil }}
+                                            </p>
+                                            @if($isDataAneh)
+                                                <span class="text-xs text-gray-400">{{ $keterangan }}</span>
+                                            @endif
+                                        </div>
+
+                                        @if(isset($user->hasilKlasifikasi->data_input_json['prediksi_nb']['detail_probabilitas']) && !$isDataAneh)
+                                            <div class="mt-2 flex gap-3 text-xs text-gray-600 bg-white/50 p-2 rounded inline-block">
+                                                @foreach($user->hasilKlasifikasi->data_input_json['prediksi_nb']['detail_probabilitas'] as $k => $v)
+                                                    <span>{{ $k }}: <b>{{ $v }}%</b></span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

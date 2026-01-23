@@ -46,19 +46,19 @@ class ImportDataCsvSeeder extends Seeder
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
             
-            // --- STRUKTUR KOLOM CSV (Update Single URICA) ---
+            // --- STRUKTUR KOLOM CSV (Sesuai Gambar Anda) ---
             // 0: No
-            // 1: Nama
-            // 2: Tanggal Masuk
-            // 3: Gender
+            // 1: Inisial/Nama
+            // 2: Tanggal
+            // 3: Jenis Kelamin
             // 4: Alamat
             // 5: NAPZA
             // 6: Lama Penggunaan
             // 7: Riwayat Penyakit
-            // 8: Tingkat Keparahan (Diagnosa Lama)
-            // 9: SKOR URICA (Single Value) -> Kolom Baru
+            // 8: URICA Tes (Nilai 10, 16, dll)
+            // 9: Tingkat Keparahan (Label: Sedang, Ringan) -> KITA PAKAI INI LANGSUNG
 
-            if (count($row) < 9) {
+            if (count($row) < 10) { // Minimal ada 10 kolom
                 $skipped++;
                 continue;
             }
@@ -69,13 +69,24 @@ class ImportDataCsvSeeder extends Seeder
             $cleanName = preg_replace('/[^a-z0-9]/', '', strtolower($nama));
             $email = $cleanName . '.' . uniqid() . '@lrppn.com';
             $tanggalMasuk = $this->parseDate($row[2]);
+            
+            // Ambil Skor URICA dari Kolom I (Index 8)
+            $uricaScore = isset($row[8]) && is_numeric($row[8]) ? (float)$row[8] : 0;
 
-            // Ambil Skor URICA Tunggal dari kolom ke-9
-            // Jika kosong, default 0
-            $uricaScore = isset($row[9]) && is_numeric($row[9]) ? (float)$row[9] : 0;
+            // AMBIL HASIL DIAGNOSA LANGSUNG DARI CSV (Kolom J / Index 9)
+            $hasilDiagnosaCSV = trim($row[9]); 
+            $hasilDiagnosaCSV = ucwords(strtolower($hasilDiagnosaCSV)); // Rapikan huruf (sedang -> Sedang)
+
+            // Tentukan Program berdasarkan teks di CSV
+            $program = match ($hasilDiagnosaCSV) {
+                'Berat', 'Sangat Berat' => 'Rawat Inap',
+                'Sedang' => 'Rehabilitasi Non-Medis (Sosial)',
+                'Ringan' => 'Rawat Jalan',
+                default => 'Belum Ditentukan',
+            };
 
             try {
-                DB::transaction(function () use ($row, $nama, $email, $tanggalMasuk, $uricaScore) {
+                DB::transaction(function () use ($row, $nama, $email, $tanggalMasuk, $uricaScore, $hasilDiagnosaCSV, $program) {
                     
                     // 1. Buat User
                     $user = User::create([
@@ -87,46 +98,38 @@ class ImportDataCsvSeeder extends Seeder
                         'updated_at' => $tanggalMasuk,
                     ]);
 
-                    // 2. Buat Profil (Simpan Single Score)
+                    // 2. Buat Profil
                     $user->profil()->create([
                         'alamat' => $row[4] ?? '-',
-                        'nama_wali' => 'Data Historis',
+                        'nama_wali' => 'Data Import',
                         'no_telepon_wali' => '-',
-                        'urica_score' => $uricaScore, // Masukkan ke kolom urica_score
+                        'urica_score' => $uricaScore,
                         'created_at' => $tanggalMasuk,
                         'updated_at' => $tanggalMasuk,
                     ]);
 
-                    // 3. Buat Hasil Klasifikasi
-                    $keparahan = trim($row[8]); 
-                    $keparahan = ucwords(strtolower($keparahan));
-
-                    $program = match ($keparahan) {
-                        'Berat', 'Sangat Berat' => 'Rawat Inap',
-                        'Sedang' => 'Rehabilitasi Non-Medis (Sosial)',
-                        'Ringan' => 'Rawat Jalan',
-                        default => 'Belum Ditentukan',
-                    };
-
-                    $riwayatPenyakit = trim($row[7]);
-
-                    // Simpan JSON Input dengan key 'urica_score'
-                    $inputJson = [ 
+                    // 3. Simpan Hasil Klasifikasi (LANGSUNG DARI CSV)
+                    // Kita simpan data input untuk arsip, tapi hasilnya kita paksa pakai data CSV
+                    $inputJson = [
                         'jenis_napza' => $row[5],
                         'lama_penggunaan' => $row[6],
-                        'jenis_kelamin' => $row[3], 
-                        'riwayat_penyakit' => $riwayatPenyakit,
-                        'urica_score' => $uricaScore, 
+                        'jenis_kelamin' => $row[3],
+                        'riwayat_penyakit' => $row[7],
+                        'urica_score' => $uricaScore
+                    ];
+
+                    // Tambahkan data probabilitas palsu/kosong karena ini import manual
+                    $inputJson['prediksi_nb'] = [
+                        'tingkat_keparahan' => $hasilDiagnosaCSV,
+                        'detail_probabilitas' => ['Manual' => 100] // Dummy data
                     ];
 
                     $user->hasilKlasifikasi()->create([
-                        // [PERBAIKAN] Hapus json_encode(), kirim array $inputJson langsung
-                        'data_input_json' => $inputJson, 
-                        
-                        'prediksi_knn' => $keparahan,
-                        'prediksi_nb' => $keparahan,
+                        'data_input_json' => $inputJson,
+                        'prediksi_knn' => '-', 
+                        'prediksi_nb' => $hasilDiagnosaCSV, // <-- Pakai data kolom J
                         'rekomendasi_program' => $program,
-                        'catatan_sistem' => 'Import CSV (Single URICA Score).',
+                        'catatan_sistem' => 'Import CSV (Data Historis Asli)',
                         'created_at' => $tanggalMasuk,
                         'updated_at' => $tanggalMasuk,
                     ]);
@@ -134,9 +137,9 @@ class ImportDataCsvSeeder extends Seeder
                     // 4. Riwayat Status
                     $user->riwayatStatus()->create([
                         'admin_id' => 1,
-                        'status_baru' => $keparahan,
+                        'status_baru' => $hasilDiagnosaCSV, // <-- Pakai data kolom J
                         'program_baru' => $program,
-                        'faktor_penyebab' => 'Data Historis (Import CSV)',
+                        'faktor_penyebab' => 'Data Historis (Dari File Excel)',
                         'created_at' => $tanggalMasuk,
                         'updated_at' => $tanggalMasuk,
                     ]);

@@ -197,9 +197,9 @@ class PasienController extends Controller
             // Riwayat Status
             $pasien->riwayatStatus()->create([
                 'admin_id' => Auth::id(),
-                'status_baru' => $hasilApi['prediksi_nb']['tingkat_keparahan'],
-                'program_baru' => $hasilApi['prediksi_nb']['program'],
-                'faktor_penyebab' => 'Hasil klasifikasi awal (Prediksi NB).',
+                'status_baru' => $hasilApi['prediksi_knn']['tingkat_keparahan'],
+                'program_baru' => $hasilApi['prediksi_knn']['program'],
+                'faktor_penyebab' => 'Hasil klasifikasi awal AI (Prediksi KNN).',
             ]);
 
             DB::commit();
