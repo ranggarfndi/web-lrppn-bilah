@@ -57,6 +57,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // --- Ubah Status Pasien ---
     Route::get('/pasien/{user}/status/create', [RiwayatStatusController::class, 'create'])->name('status.create');
     Route::post('/pasien/{user}/status', [RiwayatStatusController::class, 'store'])->name('status.store');
+
+    // Route untuk Laporan Klasifikasi
+    Route::get('/laporan-klasifikasi', [App\Http\Controllers\LaporanController::class, 'index'])->name('laporan.index');
 });
 
 

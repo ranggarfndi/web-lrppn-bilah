@@ -1,32 +1,28 @@
-{{-- File: resources/views/layouts/navigation.blade.php (Dengan Logo Gambar) --}}
+{{-- File: resources/views/layouts/navigation.blade.php (Updated with Laporan Klasifikasi) --}}
 
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100 shadow-lg sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
 
+                {{-- LOGO & BRAND --}}
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-3 transition-transform duration-200 hover:scale-105">
-                        
                         {{-- 1. GAMBAR LOGO --}}
-                        {{-- Pastikan file ada di public/images/logo.png --}}
                         <img src="{{ asset('images/logo-lrppn.png') }}" 
                              alt="Logo LRPPN" 
                              class="h-10 w-auto object-contain"> 
 
                         {{-- 2. TEKS NAMA APLIKASI --}}
-                        {{-- 'hidden sm:block' artinya teks sembunyi di HP kecil, muncul di Tablet/PC --}}
-                        {{-- Jika ingin selalu muncul, hapus 'hidden sm:block' --}}
                         <div class="flex flex-col">
                             <span class="text-lg font-bold text-indigo-700 leading-tight tracking-tight">
                                 LRPPN BI
                             </span>
-                            {{-- <span class="text-[10px] font-semibold text-gray-500 uppercase tracking-widest leading-none">
-                                Portal Pasien
-                            </span> --}}
                         </div>
                     </a>
                 </div>
+
+                {{-- MENU DESKTOP --}}
                 <div class="hidden space-x-4 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link-pill :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
@@ -34,8 +30,14 @@
 
                     @auth
                         @if(Auth::user()->role == 'admin')
+                            {{-- Menu Admin: Manajemen Pasien --}}
                             <x-nav-link-pill :href="route('admin.pasien.index')" :active="request()->routeIs('admin.pasien.*', 'admin.soap.*', 'admin.likert.*')">
                                 {{ __('Manajemen Pasien') }}
+                            </x-nav-link-pill>
+                            
+                            {{-- [BARU] Menu Admin: Laporan Klasifikasi --}}
+                            <x-nav-link-pill :href="route('admin.laporan.index')" :active="request()->routeIs('admin.laporan.index')">
+                                {{ __('Laporan Klasifikasi') }}
                             </x-nav-link-pill>
                             
                         @elseif(Auth::user()->role == 'pasien')
@@ -47,6 +49,7 @@
                 </div>
             </div>
 
+            {{-- USER DROPDOWN (KANAN) --}}
             @auth
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
@@ -75,6 +78,7 @@
         </div>
     </div>
 
+    {{-- MENU MOBILE (RESPONSIVE) --}}
     @auth
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
@@ -90,6 +94,14 @@
                                        active-class="bg-indigo-50 border-l-4 border-indigo-400 text-indigo-700 font-semibold">
                     {{ __('Manajemen Pasien') }}
                 </x-responsive-nav-link>
+
+                {{-- [BARU] Responsive Menu: Laporan Klasifikasi --}}
+                <x-responsive-nav-link :href="route('admin.laporan.index')" :active="request()->routeIs('admin.laporan.index')"
+                                       class="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                       active-class="bg-indigo-50 border-l-4 border-indigo-400 text-indigo-700 font-semibold">
+                    {{ __('Laporan Klasifikasi') }}
+                </x-responsive-nav-link>
+
             @elseif(Auth::user()->role == 'pasien')
                 <x-responsive-nav-link :href="route('pasien.riwayat.show')" :active="request()->routeIs('pasien.riwayat.show')"
                                        class="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -99,6 +111,7 @@
             @endif
         </div>
 
+        {{-- USER INFO MOBILE --}}
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
@@ -113,9 +126,9 @@
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault(); this.closest('form').submit();"
-                            class="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                            active-class="bg-indigo-50 border-l-4 border-indigo-400 text-indigo-700 font-semibold">
+                                onclick="event.preventDefault(); this.closest('form').submit();"
+                                class="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                active-class="bg-indigo-50 border-l-4 border-indigo-400 text-indigo-700 font-semibold">
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
                 </form>
