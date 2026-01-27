@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
         // 1. JALANKAN IMPORT CSV TERLEBIH DAHULU
         // Di sini terjadi proses Truncate (Pembersihan tabel)
         // Jadi biarkan dia membersihkan tabel dulu sebelum kita masukkan Admin.
-        $this->call(ImportDataCsvSeeder::class);
+        // $this->call(ImportDataCsvSeeder::class);
 
         // 2. BARU BUAT AKUN ADMIN (SETELAH BERSIH-BERSIH)
         User::create([
