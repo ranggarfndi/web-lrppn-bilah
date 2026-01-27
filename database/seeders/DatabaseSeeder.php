@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash; // Kita butuh Hash
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,29 +13,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Buat 1 Akun Admin
-        // Kita buat secara manual agar kita tahu pasti email & password-nya
-        User::factory()->create([
-            'name' => 'Admin LRPPN',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'), // Password: "password"
-            'role' => 'admin',
-        ]);
-
-        // 2. Jalankan Import CSV (Data Pasien Asli 2021-2025)
+        // 1. JALANKAN IMPORT CSV TERLEBIH DAHULU
+        // Di sini terjadi proses Truncate (Pembersihan tabel)
+        // Jadi biarkan dia membersihkan tabel dulu sebelum kita masukkan Admin.
         $this->call(ImportDataCsvSeeder::class);
 
-        // 2. Buat 50 Akun Pasien (Dummy)
-        // Factory kita akan otomatis membuat semua data riwayat
-        // (Profil, Klasifikasi, 5 SOAP, 5 Likert) untuk setiap pasien.
-        // User::factory()->count(50)->create();
-
-        // 3. Buat 1 Akun Pasien (Dummy) yang kita tahu login-nya
-        // User::factory()->create([
-        //     'name' => 'Pasien Tes',
-        //     'email' => 'pasien@gmail.com',
-        //     'password' => Hash::make('password'), // Password: "password"
-        //     'role' => 'pasien',
-        // ]);
+        // 2. BARU BUAT AKUN ADMIN (SETELAH BERSIH-BERSIH)
+        User::create([
+            'name' => 'Admin LRPPN',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'), 
+            'role' => 'admin',
+            'email_verified_at' => now(),
+        ]);
+        
+        // Output info di terminal agar kita tahu Admin sudah dibuat
+        $this->command->info('User Admin berhasil dibuat: admin@example.com');
     }
 }

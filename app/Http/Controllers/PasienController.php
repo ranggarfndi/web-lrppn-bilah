@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\ProfilPasien;
 use App\Models\HasilKlasifikasi;
+use App\Models\RiwayatStatusPasien; // Pastikan model ini di-import
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +26,6 @@ class PasienController extends Controller
 
         // 1. Ambil input dari URL
         $search = $request->input('search');
-        // Ambil 'sort', defaultnya adalah 'date_desc'
         $sort = $request->input('sort', 'date_desc');
 
         // 2. Mulai kueri ke database
@@ -68,7 +68,7 @@ class PasienController extends Controller
      */
     public function create()
     {
-        // Daftar 28 Pertanyaan URICA (dummy questions sudah dihapus)
+        // Daftar 28 Pertanyaan URICA
         $urica_questions = [
             1 => "Sejauh yg saya ketahui, saya tidak mempunyai masalah penyalahgunaan zat yg memerlukan perubahan",
             2 => "Saya fikir saya mungkin siap untuk memperbaiki diri saya",
@@ -104,13 +104,13 @@ class PasienController extends Controller
     }
 
     /**
-     * Menyimpan pasien baru, memanggil API klasifikasi,
-     * dan menyimpan semua data.
+     * Menyimpan pasien baru, memanggil SCRIPT PYTHON,
+     * dan menyimpan semua data lengkap (KNN & NB).
      * URL: POST /admin/pasien
      */
     public function store(Request $request)
     {
-        // 1. Validasi Input
+        // 1. Validasi Input (BIARKAN SAMA)
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -119,52 +119,68 @@ class PasienController extends Controller
             'tgl_lahir' => 'nullable|date',
             'nama_wali' => 'nullable|string|max:255',
             'no_telepon_wali' => 'nullable|string|max:20',
-            // Data Klasifikasi
             'jenis_kelamin' => 'required|string|in:Laki-Laki,Perempuan',
             'lama_penggunaan' => 'required|string|max:100',
             'jenis_napza' => 'required|string|max:255',
             'riwayat_penyakit' => 'nullable|string|max:255',
-            // Validasi URICA
             'urica' => 'required|array',
             'urica.*' => 'required|integer|min:1|max:5',
         ]);
 
-        // 2. HITUNG SKOR URICA (VERSI DISATUKAN)
-        // Ambil semua jawaban (array)
+        // 2. HITUNG SKOR URICA (BIARKAN SAMA)
         $uricaAnswers = $request->input('urica');
-
-        // Jumlahkan total poin dari 28 soal
         $totalPoin = array_sum($uricaAnswers);
+        $finalUricaScore = $totalPoin / 7;
 
-        // Bagi dengan 7 sesuai instruksi
-        $finalUricaScore = $totalPoin / 7; 
-        // Hasilnya berupa float, misal: 14.5
-
-        // 3. Siapkan data untuk API Python
+        // 3. SIAPKAN DATA UNTUK PYTHON
         $dataUntukApi = [
-            'jenis_kelamin' => $validatedData['jenis_kelamin'],
-            'lama_penggunaan' => $validatedData['lama_penggunaan'],
-            'jenis_napza' => $validatedData['jenis_napza'],
-            'riwayat_penyakit' => $validatedData['riwayat_penyakit'] ?? 'Tidak Ada',
-            // [UPDATE] Kirim SATU nilai saja ke API
-            'urica_score' => $finalUricaScore, 
+            'gender' => $validatedData['jenis_kelamin'],
+            'lama_pakai' => $validatedData['lama_penggunaan'],
+            'urica' => $finalUricaScore,
+            'napza' => $validatedData['jenis_napza'],
+            'penyakit' => $validatedData['riwayat_penyakit'] ?? 'Tidak Ada'
         ];
 
-        // 4. Panggil API Python
-        $urlApi = 'http://127.0.0.1:5000/predict';
-        $response = null;
-        try {
-            $response = Http::timeout(10)->post($urlApi, $dataUntukApi);
-            if (!$response->successful()) {
-                return back()->with('error', 'Gagal terhubung ke server klasifikasi (Python).')->withInput();
-            }
-        } catch (Exception $e) {
-            return back()->with('error', 'Server klasifikasi (Python) tidak merespons.')->withInput();
-        }
-        
-        $hasilApi = $response->json();
+        // 4. PANGGIL PYTHON (VERSI BASE64 & ERROR LOGGING)
+        $pythonExec = "python"; 
+        // [PASTIKAN PATH INI SESUAI DENGAN KOMPUTER ANDA]
+        $scriptPath = "D:/laragon/www/proyek-api-python/predict.py"; 
 
-        // 5. Simpan ke Database
+        $jsonString = json_encode($dataUntukApi);
+        $base64Args = base64_encode($jsonString);
+        
+        // Tambahkan 2>&1 agar error tertangkap (sama seperti Seeder)
+        $command = $pythonExec . " " . $scriptPath . " " . $base64Args . " 2>&1";
+        
+        $output = shell_exec($command);
+        $hasilApi = json_decode($output, true);
+
+        // Cek Error Python
+        if (!$hasilApi || isset($hasilApi['error'])) {
+            return back()->with('error', 'Gagal memproses AI: ' . ($hasilApi['error'] ?? $output))->withInput();
+        }
+
+        // 5. AMBIL HASIL LENGKAP (Termasuk Matrix & Debug)
+        $knnLabel = $hasilApi['knn']['label'] ?? 'Belum Ditentukan';
+        $knnConf  = $hasilApi['knn']['confidence'] ?? 0;
+        
+        $nbLabel  = $hasilApi['nb']['label'] ?? 'Belum Ditentukan';
+        $nbConf   = $hasilApi['nb']['confidence'] ?? 0;
+        $nbProbs  = $hasilApi['nb']['probs'] ?? [];
+
+        // [BARU] Ambil Data Numerik & Debug KNN
+        $matrix   = $hasilApi['matrix_nilai'] ?? [];
+        $debugKnn = $hasilApi['debug_knn'] ?? [];
+
+        // Tentukan Program
+        $program = match ($nbLabel) {
+            'Berat', 'Sangat Berat' => 'Rawat Inap',
+            'Sedang' => 'Rehabilitasi Non-Medis (Sosial)',
+            'Ringan' => 'Rawat Jalan',
+            default => 'Belum Ditentukan',
+        };
+
+        // 6. SIMPAN KE DATABASE
         DB::beginTransaction();
         try {
             $pasien = User::create([
@@ -174,41 +190,46 @@ class PasienController extends Controller
                 'role' => 'pasien',
             ]);
 
-            // Simpan Profil
-            // [PENTING] Pastikan Anda sudah membuat kolom 'urica_score' (float) 
-            // di tabel profil_pasiens menggantikan 4 kolom sebelumnya.
             $pasien->profil()->create([
                 'alamat' => $validatedData['alamat'],
                 'tgl_lahir' => $validatedData['tgl_lahir'],
                 'nama_wali' => $validatedData['nama_wali'],
                 'no_telepon_wali' => $validatedData['no_telepon_wali'],
-                'urica_score' => $finalUricaScore, // Simpan skor tunggal
+                'urica_score' => $finalUricaScore,
             ]);
 
-            // Simpan Hasil Klasifikasi
+            // [UPDATE PENTING] Simpan struktur lengkap agar Modal Popup & Tabel Numerik berfungsi
+            $dataSimpanJson = $dataUntukApi;
+            $dataSimpanJson['hasil_ai'] = [
+                'knn' => ['label' => $knnLabel, 'confidence' => $knnConf],
+                'nb'  => ['label' => $nbLabel, 'confidence' => $nbConf, 'probs' => $nbProbs],
+                'matrix_nilai' => $matrix,   // <--- Supaya Tab 2 Muncul Angkanya
+                'debug_knn' => $debugKnn     // <--- Supaya Tombol Mata Muncul Rumusnya
+            ];
+
             $pasien->hasilKlasifikasi()->create([
-                'data_input_json' => $dataUntukApi,
-                'prediksi_knn' => $hasilApi['prediksi_knn']['tingkat_keparahan'],
-                'prediksi_nb' => $hasilApi['prediksi_nb']['tingkat_keparahan'],
-                'rekomendasi_program' => $hasilApi['prediksi_knn']['program'],
-                'catatan_sistem' => $hasilApi['prediksi_knn']['catatan'],
+                'data_input_json' => $dataSimpanJson,
+                'prediksi_knn' => $knnLabel,
+                'prediksi_nb' => $nbLabel,
+                'rekomendasi_program' => $program,
+                'catatan_sistem' => "Input Manual. NB Conf: {$nbConf}%, KNN Conf: {$knnConf}%",
             ]);
 
-            // Riwayat Status
             $pasien->riwayatStatus()->create([
                 'admin_id' => Auth::id(),
-                'status_baru' => $hasilApi['prediksi_knn']['tingkat_keparahan'],
-                'program_baru' => $hasilApi['prediksi_knn']['program'],
-                'faktor_penyebab' => 'Hasil klasifikasi awal AI (Prediksi KNN).',
+                'status_baru' => $nbLabel,
+                'program_baru' => $program,
+                'faktor_penyebab' => 'Input Manual (AI Processed)',
+                'keterangan' => 'Klasifikasi awal sistem (Komparasi KNN & NB).'
             ]);
 
             DB::commit();
 
             return redirect()->route('admin.pasien.show', $pasien->id)
-                ->with('success', 'Pasien berhasil dibuat. Skor URICA: ' . number_format($finalUricaScore, 2));
+                ->with('success', 'Pasien berhasil dibuat. Prediksi AI: ' . $nbLabel);
+        
         } catch (Exception $e) {
             DB::rollBack();
-            report($e);
             return back()->with('error', 'Gagal menyimpan database: ' . $e->getMessage())->withInput();
         }
     }
@@ -223,7 +244,6 @@ class PasienController extends Controller
             abort(404);
         }
 
-        /** @var \App\Models\User $user */
         $user->load([
             'profil',
             'hasilKlasifikasi',
@@ -239,23 +259,100 @@ class PasienController extends Controller
         return view('admin.pasien.show', compact('user'));
     }
 
+    /**
+     * METHOD BARU: Untuk Analisa Ulang Data (Re-Diagnose)
+     * URL: POST /admin/pasien/{user}/reprocess
+     */
+    public function reprocessAi(User $user)
+    {
+        // 1. Ambil data pasien yang sudah ada
+        $profil = $user->profil;
+        $klasifikasi = $user->hasilKlasifikasi;
+
+        if (!$profil || !$klasifikasi) {
+            return back()->with('error', 'Data profil tidak lengkap.');
+        }
+
+        // Ambil data dari JSON lama atau kolom profil
+        $jsonLama = $klasifikasi->data_input_json ?? [];
+        
+        // Mapping ulang data untuk Python
+        $inputData = [
+            'gender'     => $jsonLama['gender'] ?? $jsonLama['jenis_kelamin'] ?? 'Laki-Laki',
+            'lama_pakai' => $jsonLama['lama_pakai'] ?? $jsonLama['lama_penggunaan'] ?? '0 Tahun',
+            'urica'      => $profil->urica_score ?? 0,
+            'napza'      => $jsonLama['napza'] ?? $jsonLama['jenis_napza'] ?? '-',
+            'penyakit'   => $jsonLama['penyakit'] ?? $jsonLama['riwayat_penyakit'] ?? '-'
+        ];
+
+        // 2. Panggil Python
+        $pythonExec = "python"; 
+        $scriptPath = "D:/laragon/www/proyek-api-python/predict.py"; 
+
+        $jsonArgs = json_encode($inputData);
+        $command = $pythonExec . " " . $scriptPath . " " . escapeshellarg($jsonArgs);
+        $output = shell_exec($command);
+        $ai = json_decode($output, true);
+
+        if (!$ai || isset($ai['error'])) {
+            return back()->with('error', 'Gagal hitung AI: ' . ($ai['error'] ?? 'Output Error'));
+        }
+
+        // 3. Ambil Hasil Baru
+        $knnLabel = $ai['knn']['label'] ?? '-';
+        $knnConf  = $ai['knn']['confidence'] ?? 0;
+        $nbLabel  = $ai['nb']['label'] ?? '-';
+        $nbConf   = $ai['nb']['confidence'] ?? 0;
+        $nbProbs  = $ai['nb']['probs'] ?? [];
+
+        $program = match ($nbLabel) {
+            'Berat', 'Sangat Berat' => 'Rawat Inap',
+            'Sedang' => 'Rehabilitasi Non-Medis (Sosial)',
+            'Ringan' => 'Rawat Jalan',
+            default => 'Belum Ditentukan',
+        };
+
+        // 4. Update Database
+        $jsonBaru = $inputData;
+        $jsonBaru['hasil_ai'] = [
+            'knn' => ['label' => $knnLabel, 'confidence' => $knnConf],
+            'nb'  => ['label' => $nbLabel, 'confidence' => $nbConf, 'probs' => $nbProbs]
+        ];
+
+        $user->hasilKlasifikasi()->update([
+            'data_input_json' => $jsonBaru,
+            'prediksi_knn' => $knnLabel,
+            'prediksi_nb' => $nbLabel,
+            'rekomendasi_program' => $program,
+            'catatan_sistem' => "Analisa Ulang (Reprocess). NB: {$nbConf}%, KNN: {$knnConf}%",
+        ]);
+
+        // Tambah status baru ke timeline
+        $user->riwayatStatus()->create([
+            'admin_id' => Auth::id(),
+            'status_baru' => $nbLabel,
+            'program_baru' => $program,
+            'faktor_penyebab' => 'Analisa Ulang (Manual Trigger)',
+            'keterangan' => 'Perhitungan ulang menggunakan model terbaru.'
+        ]);
+
+        return back()->with('success', 'Data berhasil dianalisa ulang! Hasil: ' . $nbLabel);
+    }
+
     public function getChartData(User $user)
     {
-        // 1. Ambil semua hasil tes likert pasien ini, urutkan dari LAMA ke BARU
         $hasilTes = $user->tesLikertHasil()
                         ->orderBy('created_at', 'asc')
                         ->get();
 
-        // 2. Format data agar bisa dibaca oleh Chart.js
-        $labels = []; // Untuk sumbu X (Tanggal)
-        $dataSkor = []; // Untuk sumbu Y (Skor)
+        $labels = []; 
+        $dataSkor = []; 
 
         foreach ($hasilTes as $hasil) {
             $labels[] = $hasil->created_at->format('d M Y'); 
             $dataSkor[] = $hasil->total_skor;
         }
 
-        // 3. Kembalikan data sebagai JSON
         return response()->json([
             'labels' => $labels,
             'data' => $dataSkor,
